@@ -15,7 +15,7 @@
 
 ---
 
-## Початкова архітектура БД (погана схема)
+### Початкова архітектура БД (погана схема)
 
 ```sql
 CREATE DATABASE IF NOT EXISTS analytics_legacy; 
@@ -54,7 +54,7 @@ INSERT INTO pv (user_id, url, country, device, created_at, duration_ms) VALUES
 
 ---
 
-## Оптимізована архітектура БД
+### Оптимізована архітектура БД
 ```sql
 CREATE DATABASE IF NOT EXISTS analytics_opt;
 USE analytics_opt;
@@ -111,8 +111,8 @@ CREATE TABLE pv_events (
 
 ---
 
-## A1. Топ‑5 сторінок за унікальними користувачами у діапазоні дат і країні.
-### Було:
+### A1. Топ‑5 сторінок за унікальними користувачами у діапазоні дат і країні.
+#### Було:
 ```sql
 SELECT 
     pv.url, 
@@ -128,7 +128,7 @@ LIMIT 5;
 Працював зі строками які переводили у дату.
 ![First result](images/image1.png)
 
-### Стало:
+#### Стало:
 ```sql
 SELECT p.url_text AS url,
        t.unique_users
@@ -150,12 +150,12 @@ JOIN analytics_opt.pages p ON p.id = t.page_id;
 Використання індексів для швидкої фільтрації. Використання підзапитів.
 ![Second result](images/image2.png)
 ---
-## A2. Batch insert 100–1000 рядків за раз з порадами щодо швидкості (транзакції, INSERT ... VALUES (...) , (...), LOAD DATA - якщо доречно)
+### A2. Batch insert 100–1000 рядків за раз з порадами щодо швидкості (транзакції, INSERT ... VALUES (...) , (...), LOAD DATA - якщо доречно)
 Для legacy та optymized я використовува вставку з використанням **транзакцій** та **INSERT ... VALUEA (...)**. Для цього я створював окремо PHP файл з підключенням до БД через PDO з обробкою помилок та отриманням даних у вигляді асоціативного масиву
 
 У першому випадку (legacy) я передав 500 рядків розбиваючи на 100 батчів. У іншому (optimized) випадку 1000 рядків по 200 батчів.
 
-#### Основна логіка:
+###### Основна логіка:
 ```php
 $pdo->beginTransaction();
     for ($i = 0; $i < count($rows); $i += $batchSize) {
@@ -176,3 +176,137 @@ $pdo->beginTransaction();
 $pdo->commit();
 ```
 ---
+## Друге завдання
+**Опис завдання**
+
+1. Переписати цей скрипт у вигляді класу ReportApp з: 
+* __construct($orders, $file), 
+* методами process(), write(), summary(), 
+* __destruct() для закриття/логування. 
+2. Забезпечити: 
+* Валідацію: враховувати тільки записи зі status = paid і amount > 0. 
+* Підрахунок: total_paid, кількість замовлень, середнє значення. 
+* Запис результату у файл безпечним способом. 
+Замість «голої» функції з echo - зробити, щоб при запуску php  report.php виводилось щось на кшталт: 
+```
+Start report 
+Valid orders: 2 
+Total paid: 400 
+Avg amount: 200 
+```
+3. **File: report.txt**
+---
+Для початку я створив клас `Loger.php` щоб він виводив у окремий файл логування подій та помилок.
+```php
+<?php
+class Logger{
+    private $handle;
+    private $path;
+    public function __construct(string $path) {
+        $this->path = $path;
+        $this->handle = @fopen($this->path, 'a');
+        if ($this->handle === false) {
+            error_log("Не можу відкрити файл: {$this->path}");
+            $this->handle = null;
+        }
+    }
+    public function info(string $message): void
+    {
+        $this->write('INFO', $message);
+    }
+
+    public function error(string $message): void
+    {
+        $this->write('ERROR', $message);
+    }
+
+    private function write(string $level, string $message): void
+    {
+        $ts = (new DateTime())->format('Y-m-d H:i:s');
+        $line = "[$ts] [$level] $message" . PHP_EOL;
+        if (is_resource($this->handle)) {
+            fwrite($this->handle, $line);
+        } else {
+            error_log($line);
+        }
+    }
+
+    public function __destruct()
+    {
+        if (is_resource($this->handle)) {
+            fclose($this->handle);
+        }
+    }
+
+}
+```
+Виводить або `INFO` або `ERROR`
+---
+Далі я створив файл `report.php` в якому реалізував клас `ReportApp`.
+```php Повний код
+<?php
+require_once __DIR__ . DIRECTORY_SEPARATOR . "Logger.php";
+class ReportApp {
+    private array $orders;
+    private string $outFile;
+    private Logger $logger;
+    
+    private array $validOrders = [];
+    private int $count = 0;
+    private float $totalPaid = 0.0;
+    private float $avgAmount = 0.0;
+    public function __construct(array $orders, string $file, ?Logger $logger = null)
+    {
+        ...
+    }
+    public function process():void {
+        ...
+    }
+    private function formatNumber(float $n): string
+    {
+        ...
+    }
+
+    public function write(): void
+    {
+        ...
+    }
+    public function summary(): void
+    {
+        ...
+    }
+    public function __destruct()
+    {
+        ...
+    }
+
+
+}
+```
+* __construct($orders, $file, $logger) – ініціалізація замовлень, файлу та логера.
+* process() – фільтрує замовлення (status = paid і amount > 0), підраховує:
+    * кількість валідних замовлень,
+    * загальну суму (total_paid),
+    * середнє значення (avg_amount).
+* write() – безпечний запис звіту у файл (flock, тимчасовий файл, атомарний rename).
+* summary() – вивід підсумку на екран.
+* __destruct() – логування завершення роботи
+
+### Приклад виводу
+Звіт:
+```
+Start report
+Valid orders: 8
+Total paid: 1770
+Avg amount: 221.25
+```
+
+Логування:
+```
+[2025-09-25 13:44:18] [INFO] ReportApp створено. Файл: D:\DanyloPohor\projects\TCM_groups_test\optimized\php-service\report.txt
+[2025-09-25 13:44:18] [INFO] Обробка замовлень (кількість: 14)
+[2025-09-25 13:44:18] [INFO] Дійсних замовлень: 8, Всього: 1770, Середнє: 221.25
+[2025-09-25 13:44:18] [INFO] Звіт знаходиться: D:\DanyloPohor\projects\TCM_groups_test\optimized\php-service\report.txt
+[2025-09-25 13:44:18] [INFO] Звіт успішно записаний у D:\DanyloPohor\projects\TCM_groups_test\optimized\php-service\report.txt
+[2025-09-25 13:44:18] [INFO] ReportApp завершив роботу.
+```
