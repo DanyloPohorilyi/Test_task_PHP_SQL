@@ -1,0 +1,12 @@
+[2025-09-25 13:42:53] [INFO] ReportApp створено. Файл: D:\DanyloPohor\projects\TCM_groups_test\optimized\php-service\report.txt
+[2025-09-25 13:42:53] [INFO] Обробка замовлень (кількість: 4)
+[2025-09-25 13:42:53] [INFO] Дійсних замовлень: 2, Всього: 400, Середнє: 200
+[2025-09-25 13:42:53] [INFO] Звіт знаходиться: D:\DanyloPohor\projects\TCM_groups_test\optimized\php-service\report.txt
+[2025-09-25 13:42:53] [INFO] Звіт успішно записаний у D:\DanyloPohor\projects\TCM_groups_test\optimized\php-service\report.txt
+[2025-09-25 13:42:53] [INFO] ReportApp завершив роботу.
+[2025-09-25 13:44:18] [INFO] ReportApp створено. Файл: D:\DanyloPohor\projects\TCM_groups_test\optimized\php-service\report.txt
+[2025-09-25 13:44:18] [INFO] Обробка замовлень (кількість: 14)
+[2025-09-25 13:44:18] [INFO] Дійсних замовлень: 8, Всього: 1770, Середнє: 221.25
+[2025-09-25 13:44:18] [INFO] Звіт знаходиться: D:\DanyloPohor\projects\TCM_groups_test\optimized\php-service\report.txt
+[2025-09-25 13:44:18] [INFO] Звіт успішно записаний у D:\DanyloPohor\projects\TCM_groups_test\optimized\php-service\report.txt
+[2025-09-25 13:44:18] [INFO] ReportApp завершив роботу.

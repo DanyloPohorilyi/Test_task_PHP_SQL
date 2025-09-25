@@ -1,0 +1,4 @@
+Start report
+Valid orders: 8
+Total paid: 1770
+Avg amount: 221.25
